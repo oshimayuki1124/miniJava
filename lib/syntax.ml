@@ -10,23 +10,25 @@ module Store = Map.Make (
 
 type ty = TyInt | TyBool | TyVoid
 
-type binop = Plus
+type binop = Plus | Minus | Prod | Div | Mod | Lt | Gt | Le | Ge | Eq | Neq | Land | Lor
 
 type value = 
   | IntV of int
   | BoolV of bool
   | VoidV
 
-type expr = 
+type exp = 
   | IConst of int
   | BConst of bool
   | Var of id
-  | BinOp of binop * expr * expr
-  | Out of expr (* will be deleted *)
+  | BinOp of binop * exp * exp
+  | Out of exp (* will be deleted *)
 and command = 
   | Declare of ty * id
-  | Substitute of id * expr
-  | Exp of expr
+  | Substitute of id * exp
+  | If of (exp * command list) list
+  | While of exp * command list
+  | Exp of exp
 
 type mthd = {
   name : string;

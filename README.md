@@ -6,8 +6,8 @@ This is a subset of Java. Imprementing its interpreter, I deepen my understandin
 - [x] substitution
 - [x] simple class and method
 - [x] int and boolean value
-- [ ] binary operation
-- [ ] if statement
-- [ ] while statement
-- [ ] input from one file
+- [x] binary operation
+- [x] if statement
+- [x] while statement
+- [x] input from one file
 - [ ] simple method calling

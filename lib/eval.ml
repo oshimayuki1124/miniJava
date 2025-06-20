@@ -8,7 +8,34 @@ let classes = ref []
 
 let eval_op op v1 v2 _ = match op, v1, v2 with
   | Plus, IntV i1, IntV i2 -> IntV (i1 + i2)
-  | _ -> raise @@ Eval_bug "eval_op is not defined completely"
+  | Minus, IntV i1, IntV i2 -> IntV (i1 - i2)
+  | Prod, IntV i1, IntV i2 -> IntV (i1 * i2)
+  | Div, IntV i1, IntV i2 -> IntV (i1 / i2)
+  | Mod, IntV i1, IntV i2 -> IntV (i1 mod i2)
+  | Lt, IntV i1, IntV i2 -> BoolV (i1 < i2)
+  | Gt, IntV i1, IntV i2 -> BoolV (i1 > i2)
+  | Le, IntV i1, IntV i2 -> BoolV (i1 <= i2)
+  | Ge, IntV i1, IntV i2 -> BoolV (i1 >= i2)
+  | Eq, IntV i1, IntV i2 -> BoolV (i1 = i2)
+  | Neq, IntV i1, IntV i2 -> BoolV (i1 <> i2)
+  | Land, BoolV b1, BoolV b2 -> BoolV (b1 && b2)
+  | Lor, BoolV b1, BoolV b2 -> BoolV (b1 || b2)
+  | _ -> raise @@ Eval_error "wrong values are given to BinOp"
+
+let rec eval_exp e store = match e with
+  | IConst i -> IntV i
+  | BConst b -> BoolV b
+  | Var id -> 
+    begin try Store.find id store
+    with Not_found -> raise @@ Eval_error (id ^ " is not declared") end
+  | BinOp (op, e1, e2) -> 
+    let v1 = eval_exp e1 store in
+    let v2 = eval_exp e2 store in
+    eval_op op v1 v2 store
+  | Out e ->
+    let v = eval_exp e store in
+    fprintf std_formatter "%a\n" Pp.pp_value v;
+    VoidV
 
 let rec eval_classes cs class_name method_name store = match cs with
   | {name=class_name'; methods=ms} :: t ->
@@ -33,23 +60,26 @@ and eval_command c store = match c with
       | TyVoid -> raise @@ Eval_error "void value should not be declared"
     end end
   | Substitute (id, e) ->
-    let v, store = eval_exp e store in
+    let v = eval_exp e store in
     Store.add id v store
-  | Exp e -> let _, store = eval_exp e store in store
-and eval_exp e store = match e with
-  | IConst i -> IntV i, store
-  | BConst b -> BoolV b, store
-  | Var id -> 
-    begin try Store.find id store, store
-    with Not_found -> raise @@ Eval_error (id ^ " is not declared") end
-  | BinOp (op, e1, e2) -> 
-    let v1, store = eval_exp e1 store in
-    let v2, store = eval_exp e2 store in
-    eval_op op v1 v2 store, store
-  | Out e ->
-    let v, store = eval_exp e store in
-    fprintf std_formatter "%a\n" Pp.pp_value v;
-    VoidV, store
+  | If p -> begin match p with
+    | (e, cs) :: t -> 
+      let v = eval_exp e store in
+      begin match v with
+        | BoolV true -> eval_body cs store
+        | BoolV false -> eval_command (If t) store
+        | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
+      end
+    | [] -> store 
+    end
+  | While (e, cs) as c ->
+    let v = eval_exp e store in
+    begin match v with
+      | BoolV true -> let store = eval_body cs store in eval_command c store
+      | BoolV false -> store
+      | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
+    end
+  | Exp e -> let _ = eval_exp e store in store
 
 let eval cs class_name method_name = 
   classes := cs;

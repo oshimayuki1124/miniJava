@@ -2,7 +2,8 @@
 open Syntax
 %}
 
-%token CLASS LCURLY RCURLY LPAREN RPAREN SEMI OUT PLUS EQ INT BOOLEAN VOID EOF
+%token CLASS LCURLY RCURLY LPAREN RPAREN SEMI OUT SUBSTITUTE INT BOOLEAN VOID EOF
+%token TRUE FALSE IF ELSE WHILE PLUS MINUS PROD DIV MOD LT GT LE GE EQ NEQ LAND LOR
 
 %token<int> INTV
 %token<Syntax.id> ID
@@ -10,7 +11,11 @@ open Syntax
 %start toplevel
 %type<Syntax.program> toplevel
 
-%left PLUS
+%right LOR
+%right LAND
+%left LT GT LE GE EQ NEQ
+%left PLUS MINUS
+%left PROD DIV MOD
 
 %%
 
@@ -21,21 +26,42 @@ ClassExpr :
   | CLASS n=ID LCURLY ms=list(MethodExpr) RCURLY { {name=n; methods=ms} }
 
 MethodExpr :
-  | TyExpr n=ID LPAREN RPAREN LCURLY es=list(CommandExpr) RCURLY { {name=n; body=es} }
+  | TyExpr n=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { {name=n; body=cs} }
 
 CommandExpr :
   | t=TyExpr id=ID SEMI { Declare (t, id) }
-  | id=ID EQ e=Expr SEMI { Substitute (id, e) }
+  | id=ID SUBSTITUTE e=Expr SEMI { Substitute (id, e) }
+  | IF LPAREN e=Expr RPAREN LCURLY cs1=list(CommandExpr) RCURLY els=ElseExpr { If ((e, cs1)::els) }
+  | WHILE LPAREN e=Expr RPAREN LCURLY cs=list(CommandExpr) RCURLY { While (e, cs) }
   | e=Expr SEMI { Exp e }
+
+ElseExpr :
+  | ELSE IF LPAREN e=Expr RPAREN LCURLY cs1=list(CommandExpr) RCURLY els=ElseExpr { (e, cs1)::els }
+  | ELSE LCURLY cs=list(CommandExpr) RCURLY { [(BConst true, cs)] }
+  | (*empty*) { [] }
 
 Expr :
   | OUT LPAREN e=Expr RPAREN { Out e }
   | e1=Expr op=Op e2=Expr { BinOp (op, e1, e2) }
   | i=INTV { IConst i }
+  | TRUE { BConst true }
+  | FALSE { BConst false }
   | id=ID { Var id }
 
 %inline Op :
   | PLUS { Plus }
+  | MINUS { Minus }
+  | PROD { Prod }
+  | DIV { Div }
+  | MOD { Mod }
+  | LT { Lt }
+  | GT { Gt }
+  | LE { Le }
+  | GE { Ge }
+  | EQ { Eq }
+  | NEQ { Neq }
+  | LAND { Land }
+  | LOR { Lor }
 
 TyExpr :
   | INT { TyInt }

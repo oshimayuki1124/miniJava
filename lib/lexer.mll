@@ -7,6 +7,11 @@ let reservedWords = [
 	("void", VOID);
 	("class", CLASS);
 	("out", OUT);
+  ("true", TRUE);
+  ("false", FALSE);
+  ("if", IF);
+  ("else", ELSE);
+  ("while", WHILE);
 ]
 }
 
@@ -15,7 +20,19 @@ rule main = parse
 | [' ' '\t' '\r']* '\n' { Lexing.new_line lexbuf; main lexbuf }
 | ['0'-'9']+ { INTV (int_of_string (Lexing.lexeme lexbuf)) }
 | "+" { PLUS }
-| "=" { EQ }
+| "-" { MINUS }
+| "*" { PROD }
+| "/" { DIV }
+| "%" { MOD }
+| "<" { LT }
+| ">" { GT }
+| "<=" { LE }
+| ">=" { GE }
+| "==" { EQ }
+| "!=" { NEQ }
+| "&&" { LAND }
+| "||" { LOR }
+| "=" { SUBSTITUTE }
 | "{" { LCURLY }
 | "}" { RCURLY }
 | "(" { LPAREN }
