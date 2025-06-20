@@ -1,0 +1,4 @@
+(executable
+ (public_name miniJava)
+ (name main)
+ (libraries miniJava))

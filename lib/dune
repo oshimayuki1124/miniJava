@@ -1,0 +1,8 @@
+(library
+ (name miniJava))
+
+(ocamllex lexer)
+
+(menhir
+  (flags (--strict))
+  (modules parser))
