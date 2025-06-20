@@ -23,6 +23,7 @@ type exp =
   | Var of id
   | BinOp of binop * exp * exp
   | Out of exp (* will be deleted *)
+  | Call of id
 and command = 
   | Declare of ty * id
   | Substitute of id * exp
@@ -35,9 +36,4 @@ type mthd = {
   body : command list;
 }
 
-type class_declaration = {
-   name : string;
-   methods : mthd list;
-}
-
-type program = class_declaration list
+type program = (command list Store.t) Store.t

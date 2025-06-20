@@ -20,13 +20,21 @@ open Syntax
 %%
 
 toplevel :
-  | cs=list(ClassExpr) EOF { cs }
+  | cs=ClassesExpr EOF { cs }
+
+ClassesExpr :
+  | c=ClassExpr cs=ClassesExpr { match c with (id, ms) -> Store.add id ms cs }
+  | (*empty*) { Store.empty }
 
 ClassExpr :
-  | CLASS n=ID LCURLY ms=list(MethodExpr) RCURLY { {name=n; methods=ms} }
+  | CLASS id=ID LCURLY ms=MethodsExpr RCURLY { (id, ms) }
+
+MethodsExpr :
+  | m=MethodExpr ms=MethodsExpr { match m with (id, cs) -> Store.add id cs ms }
+  | (*empty*) { Store.empty }
 
 MethodExpr :
-  | TyExpr n=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { {name=n; body=cs} }
+  | TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, cs) }
 
 CommandExpr :
   | t=TyExpr id=ID SEMI { Declare (t, id) }
@@ -42,6 +50,7 @@ ElseExpr :
 
 Expr :
   | OUT LPAREN e=Expr RPAREN { Out e }
+  | id=ID LPAREN RPAREN { Call id }
   | e1=Expr op=Op e2=Expr { BinOp (op, e1, e2) }
   | i=INTV { IConst i }
   | TRUE { BConst true }

@@ -13,10 +13,19 @@ class Test {
 			x = 100;
 		}
 		out(x);
+
+		show();
+
 		int y;
 		while (y<100) {
 			y = y + 1;
-			out(y);
 		}
+		out(y);
+	}
+
+	void show() {
+		out(3);
+		out(true);
+		out(2525252);
 	}
 }

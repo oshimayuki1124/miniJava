@@ -7,7 +7,7 @@ let read_eval_print lexbuf file_name =
   begin 
     try
       let cs = Parser.toplevel Lexer.main lexbuf in
-      let _ = Eval.eval cs file_name "main" Syntax.Store.empty in
+      let _ = Eval.eval cs file_name in
       ()
     with
       | Parser.Error -> 

@@ -4,7 +4,8 @@ open Format
 exception Eval_error of string
 exception Eval_bug of string
 
-let classes = ref []
+let class_store = ref Store.empty
+let current_class = ref ""
 
 let eval_op op v1 v2 _ = match op, v1, v2 with
   | Plus, IntV i1, IntV i2 -> IntV (i1 + i2)
@@ -22,32 +23,7 @@ let eval_op op v1 v2 _ = match op, v1, v2 with
   | Lor, BoolV b1, BoolV b2 -> BoolV (b1 || b2)
   | _ -> raise @@ Eval_error "wrong values are given to BinOp"
 
-let rec eval_exp e store = match e with
-  | IConst i -> IntV i
-  | BConst b -> BoolV b
-  | Var id -> 
-    begin try Store.find id store
-    with Not_found -> raise @@ Eval_error (id ^ " is not declared") end
-  | BinOp (op, e1, e2) -> 
-    let v1 = eval_exp e1 store in
-    let v2 = eval_exp e2 store in
-    eval_op op v1 v2 store
-  | Out e ->
-    let v = eval_exp e store in
-    fprintf std_formatter "%a\n" Pp.pp_value v;
-    VoidV
-
-let rec eval_classes cs class_name method_name store = match cs with
-  | {name=class_name'; methods=ms} :: t ->
-    if class_name = class_name' then eval_methods ms method_name store
-    else eval_classes t class_name method_name store
-  | _ -> raise @@ Eval_error ("class " ^ class_name ^ " did not find")
-and eval_methods ms method_name store = match ms with
-  | {name=method_name'; body=b} :: t ->
-    if method_name = method_name' then eval_body b store
-    else eval_methods t method_name store
-  | _ -> raise @@ Eval_error ("method " ^ method_name ^ " did not find")
-and eval_body b store = match b with
+let rec eval_body b store = match b with
   | h :: t -> eval_body t (eval_command h store)
   | [] -> store
 and eval_command c store = match c with
@@ -80,8 +56,27 @@ and eval_command c store = match c with
       | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
     end
   | Exp e -> let _ = eval_exp e store in store
+and eval_exp e store = match e with
+  | IConst i -> IntV i
+  | BConst b -> BoolV b
+  | Var id -> 
+    begin try Store.find id store
+    with Not_found -> raise @@ Eval_error (id ^ " is not declared") end
+  | BinOp (op, e1, e2) -> 
+    let v1 = eval_exp e1 store in
+    let v2 = eval_exp e2 store in
+    eval_op op v1 v2 store
+  | Out e ->
+    let v = eval_exp e store in
+    fprintf std_formatter "%a\n" Pp.pp_value v;
+    VoidV
+  | Call id -> 
+    let body = Store.find !current_class !class_store |> Store.find id in
+    let _ = eval_body body Store.empty in
+    VoidV
 
-let eval cs class_name method_name = 
-  classes := cs;
-  eval_classes cs class_name method_name
-  
+let eval cs file_name = 
+  class_store := cs;
+  current_class := file_name;
+  let body = Store.find file_name cs |> Store.find "main" in
+  eval_body body Store.empty
