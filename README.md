@@ -14,6 +14,7 @@ This is a subset of Java. Imprementing its interpreter, I deepen my understandin
 - [x] input from one file
 - [x] simple method calling
 - [x] `out` is abbreviation of `System.out.println`
+- [x] type checking before executing
 
 ### Example
 ```java=

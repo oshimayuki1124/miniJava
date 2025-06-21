@@ -71,12 +71,12 @@ and eval_exp e store = match e with
     fprintf std_formatter "%a\n" Pp.pp_value v;
     VoidV
   | Call id -> 
-    let body = Store.find !current_class !class_store |> Store.find id in
+    let (_, _, body) = Store.find !current_class !class_store |> Store.find id in
     let _ = eval_body body Store.empty in
     VoidV
 
-let eval cs file_name = 
+let eval (cs:program) file_name = 
   class_store := cs;
   current_class := file_name;
-  let body = Store.find file_name cs |> Store.find "main" in
+  let (_, _, body) = Store.find file_name cs |> Store.find "main" in
   eval_body body Store.empty

@@ -7,6 +7,8 @@ let read_eval_print lexbuf file_name =
   begin 
     try
       let cs = Parser.toplevel Lexer.main lexbuf in
+      let _ = Typing.typing cs in
+      fprintf std_formatter "type checked\n";
       let _ = Eval.eval cs file_name in
       ()
     with

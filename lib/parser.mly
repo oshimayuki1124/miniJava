@@ -30,11 +30,11 @@ ClassExpr :
   | CLASS id=ID LCURLY ms=MethodsExpr RCURLY { (id, ms) }
 
 MethodsExpr :
-  | m=MethodExpr ms=MethodsExpr { match m with (id, cs) -> Store.add id cs ms }
+  | m=MethodExpr ms=MethodsExpr { match m with (id, args, rt, cs) -> Store.add id (args, rt, cs) ms }
   | (*empty*) { Store.empty }
 
 MethodExpr :
-  | TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, cs) }
+  | rt=TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, None, rt, cs) }
 
 CommandExpr :
   | t=TyExpr id=ID SEMI { Declare (t, id) }

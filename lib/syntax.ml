@@ -31,9 +31,10 @@ and command =
   | While of exp * command list
   | Exp of exp
 
-type mthd = {
-  name : string;
-  body : command list;
-}
+type args = (id * ty) list
 
-type program = (command list Store.t) Store.t
+type mthd = args option * ty * command list
+
+type cls = mthd Store.t
+
+type program = cls Store.t
