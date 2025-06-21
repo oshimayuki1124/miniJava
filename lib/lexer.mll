@@ -19,6 +19,7 @@ let reservedWords = [
 rule main = parse
   [' ' '\t']+ { main lexbuf }
 | [' ' '\t' '\r']* '\n' { Lexing.new_line lexbuf; main lexbuf }
+| "//" [^ '\n']* '\n' { Lexing.new_line lexbuf; main lexbuf }
 | ['0'-'9']+ { INTV (int_of_string (Lexing.lexeme lexbuf)) }
 | "+" { PLUS }
 | "-" { MINUS }
