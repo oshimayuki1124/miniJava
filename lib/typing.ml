@@ -48,7 +48,7 @@ let rec typing_command c rt tystore = match c with
   | While (e, cs) ->
     let ty = typing_exp e tystore in
     if ty = TyBool then (typing_commands cs rt tystore; tystore)
-    else raise @@ Type_error ("if statement")
+    else raise @@ Type_error ("while statement")
   | Exp e -> 
     let _ = typing_exp e tystore in tystore
 and typing_commands cs rt tystore = match cs with

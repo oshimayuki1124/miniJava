@@ -33,7 +33,7 @@ and command =
 
 type args = (id * ty) list
 
-type mthd = args option * ty * command list
+type mthd = args * ty * command list
 
 type cls = mthd Store.t
 

@@ -7,7 +7,7 @@ exception Eval_bug of string
 let class_store = ref Store.empty
 let current_class = ref ""
 
-let eval_op op v1 v2 _ = match op, v1, v2 with
+let eval_op op v1 v2 = match op, v1, v2 with
   | Plus, IntV i1, IntV i2 -> IntV (i1 + i2)
   | Minus, IntV i1, IntV i2 -> IntV (i1 - i2)
   | Prod, IntV i1, IntV i2 -> IntV (i1 * i2)
@@ -44,7 +44,7 @@ and eval_command c store = match c with
       begin match v with
         | BoolV true -> eval_body cs store
         | BoolV false -> eval_command (If t) store
-        | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
+        | _ -> raise @@ Eval_error "if condition expression is evaled to not boolean value"
       end
     | [] -> store 
     end
@@ -53,7 +53,7 @@ and eval_command c store = match c with
     begin match v with
       | BoolV true -> let store = eval_body cs store in eval_command c store
       | BoolV false -> store
-      | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
+      | _ -> raise @@ Eval_error "while condition expression is evaled to not boolean value"
     end
   | Exp e -> let _ = eval_exp e store in store
 and eval_exp e store = match e with
@@ -65,7 +65,7 @@ and eval_exp e store = match e with
   | BinOp (op, e1, e2) -> 
     let v1 = eval_exp e1 store in
     let v2 = eval_exp e2 store in
-    eval_op op v1 v2 store
+    eval_op op v1 v2
   | Out e ->
     let v = eval_exp e store in
     fprintf std_formatter "%a\n" Pp.pp_value v;

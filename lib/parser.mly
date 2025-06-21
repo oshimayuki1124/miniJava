@@ -34,7 +34,7 @@ MethodsExpr :
   | (*empty*) { Store.empty }
 
 MethodExpr :
-  | rt=TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, None, rt, cs) }
+  | rt=TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, [], rt, cs) }
 
 CommandExpr :
   | t=TyExpr id=ID SEMI { Declare (t, id) }
