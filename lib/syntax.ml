@@ -23,17 +23,18 @@ type exp =
   | Var of id
   | BinOp of binop * exp * exp
   | Out of exp (* will be deleted *)
-  | Call of id
+  | Call of id * exp list
 and command = 
   | Declare of ty * id
   | Substitute of id * exp
   | If of (exp * command list) list
   | While of exp * command list
+  | Return of exp
   | Exp of exp
 
 type args = (id * ty) list
 
-type mthd = args option * ty * command list
+type mthd = args * ty * command list
 
 type cls = mthd Store.t
 

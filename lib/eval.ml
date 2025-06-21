@@ -3,6 +3,7 @@ open Format
 
 exception Eval_error of string
 exception Eval_bug of string
+exception Ret of value
 
 let class_store = ref Store.empty
 let current_class = ref ""
@@ -55,6 +56,9 @@ and eval_command c store = match c with
       | BoolV false -> store
       | _ -> raise @@ Eval_error "if statement is evaled to not boolean value"
     end
+  | Return e ->
+    let v = eval_exp e store in
+    raise @@ Ret v
   | Exp e -> let _ = eval_exp e store in store
 and eval_exp e store = match e with
   | IConst i -> IntV i
@@ -70,10 +74,14 @@ and eval_exp e store = match e with
     let v = eval_exp e store in
     fprintf std_formatter "%a\n" Pp.pp_value v;
     VoidV
-  | Call id -> 
-    let (_, _, body) = Store.find !current_class !class_store |> Store.find id in
-    let _ = eval_body body Store.empty in
-    VoidV
+  | Call (id, es) -> 
+    let (formal_args, _, body) = Store.find !current_class !class_store |> Store.find id in
+    let actual_args = List.map (fun e -> eval_exp e store) es in
+    let store = List.fold_left2 (fun store -> fun (id, _) -> fun arg -> Store.add id arg store) Store.empty formal_args actual_args in
+    try
+      let _ = eval_body body store in VoidV
+    with
+      Ret v -> v
 
 let eval (cs:program) file_name = 
   class_store := cs;

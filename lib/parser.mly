@@ -4,6 +4,7 @@ open Syntax
 
 %token CLASS LCURLY RCURLY LPAREN RPAREN SEMI OUT SUBSTITUTE INT BOOLEAN VOID EOF
 %token TRUE FALSE IF ELSE WHILE PLUS MINUS PROD DIV MOD LT GT LE GE EQ NEQ LAND LOR
+%token COMMA RETURN
 
 %token<int> INTV
 %token<Syntax.id> ID
@@ -34,13 +35,17 @@ MethodsExpr :
   | (*empty*) { Store.empty }
 
 MethodExpr :
-  | rt=TyExpr id=ID LPAREN RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, None, rt, cs) }
+  | rt=TyExpr id=ID LPAREN args=separated_list(COMMA, ArgExpr) RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, args, rt, cs) }
+
+ArgExpr :
+  | ty=TyExpr id=ID { (id, ty) }
 
 CommandExpr :
   | t=TyExpr id=ID SEMI { Declare (t, id) }
   | id=ID SUBSTITUTE e=Expr SEMI { Substitute (id, e) }
   | IF LPAREN e=Expr RPAREN LCURLY cs1=list(CommandExpr) RCURLY els=ElseExpr { If ((e, cs1)::els) }
   | WHILE LPAREN e=Expr RPAREN LCURLY cs=list(CommandExpr) RCURLY { While (e, cs) }
+  | RETURN e=Expr SEMI { Return e }
   | e=Expr SEMI { Exp e }
 
 ElseExpr :
@@ -50,7 +55,7 @@ ElseExpr :
 
 Expr :
   | OUT LPAREN e=Expr RPAREN { Out e }
-  | id=ID LPAREN RPAREN { Call id }
+  | id=ID LPAREN args=separated_list(COMMA, Expr) RPAREN { Call (id, args) }
   | e1=Expr op=Op e2=Expr { BinOp (op, e1, e2) }
   | i=INTV { IConst i }
   | TRUE { BConst true }

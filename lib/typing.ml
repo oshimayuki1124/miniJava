@@ -26,9 +26,12 @@ let rec typing_exp e tystore = match e with
     let t = typing_exp e tystore in
     if t = TyInt || t = TyBool then TyVoid
     else raise @@ Type_error "out"
-  | Call id -> 
-    let (_, t, _) = Store.find !current_class !class_store |> Store.find id in
-    t
+  | Call (id, es) -> 
+    let (args, t, _) = Store.find !current_class !class_store |> Store.find id in
+    let formal_arg_tys = List.map (fun (_, t) -> t) args in
+    let actual_arg_tys = List.map (fun e -> typing_exp e tystore) es in
+    if List.fold_left2 (fun b -> fun fa -> fun aa -> b && fa = aa) true formal_arg_tys actual_arg_tys then t
+    else raise @@ Type_error ("calling " ^ id)
 
 let rec typing_command c rt tystore = match c with
   | Declare (t, id) -> Store.add id t tystore
@@ -49,6 +52,10 @@ let rec typing_command c rt tystore = match c with
     let ty = typing_exp e tystore in
     if ty = TyBool then (typing_commands cs rt tystore; tystore)
     else raise @@ Type_error ("if statement")
+  | Return e -> 
+    let ty = typing_exp e tystore in
+    if ty = rt then tystore
+    else raise @@ Type_error ("return type")
   | Exp e -> 
     let _ = typing_exp e tystore in tystore
 and typing_commands cs rt tystore = match cs with
@@ -58,9 +65,10 @@ and typing_commands cs rt tystore = match cs with
   | [] -> ()
 
 let rec typing_methods (ms : (id * mthd) list) = match ms with
-  | (_, (_, rt, cs)) :: t -> 
-      typing_commands cs rt Store.empty;
-      typing_methods t
+  | (_, (args, rt, cs)) :: t -> 
+    let store = List.fold_left (fun store -> fun (id, ty) -> Store.add id ty store) Store.empty args in
+    typing_commands cs rt store;
+    typing_methods t
   | [] -> ()
 
 let rec typing_classes (cs : (id * cls) list) = match cs with

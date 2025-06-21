@@ -12,6 +12,7 @@ let reservedWords = [
   ("if", IF);
   ("else", ELSE);
   ("while", WHILE);
+  ("return", RETURN);
 ]
 }
 
@@ -38,6 +39,7 @@ rule main = parse
 | "(" { LPAREN }
 | ")" { RPAREN }
 | ";" { SEMI }
+| "," { COMMA }
 | ['a'-'z' 'A'-'Z'] ['a'-'z' '0'-'9' '_' '\'']*
   {
     let id = Lexing.lexeme lexbuf in

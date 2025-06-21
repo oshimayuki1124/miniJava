@@ -1,6 +1,13 @@
 # miniJava
 This is a subset of Java. Imprementing its interpreter, I deepen my understanding.
 
+## miniJava2
+### What is to implement
+- [ ] two or more classes
+- [x] method with arguments and return value
+- [ ] field and support `this` keyword
+- [ ] support array 
+
 ## miniJava1
 ### What is to implement
 - [x] declaration

@@ -21,11 +21,43 @@ class Test {
 			y = y + 1;
 		}
 		out(y);
+
+		out(avg(x, y));
+
+		out(even(x+y));
 	}
 
 	void show() {
 		out(3);
 		out(true);
 		out(2525252);
+	}
+
+	int avg(int x, int y) {
+		return x / 2 + y / 2;
+	}
+
+	boolean even(int x) {
+		if (x == 0) {
+			return true;
+		} else if (x > 0) {
+			return odd(x-1);
+		} else {
+			return odd(x+1);
+		}
+	}
+
+	boolean odd(int x) {
+		boolean res;
+
+		if (x == 0) {
+			res = false;
+		} else if (x < 0) {
+			res = even(x+1);
+		} else {
+			res = even(x-1);
+		}
+
+		return res;
 	}
 }
