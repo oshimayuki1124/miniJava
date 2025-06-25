@@ -1,6 +1,7 @@
 open Syntax
 
 exception Type_error of string
+exception Type_bug of string
 
 let class_store = ref Store.empty
 let current_class = ref ""
@@ -26,12 +27,30 @@ let rec typing_exp e tystore = match e with
     let t = typing_exp e tystore in
     if t = TyInt || t = TyBool then TyVoid
     else raise @@ Type_error "out"
-  | Call (id, es) -> 
-    let (args, t, _) = Store.find !current_class !class_store |> Store.find id in
+  | Instanciation id -> TyObj id
+  | Access_field ids -> 
+    let class_name, calling_name = match ids with
+      | _ :: [] -> raise @@ Type_bug "This should be considered as Var in parser.mly"
+      | id1 :: id2 :: [] -> begin match Store.find id1 tystore with
+        | TyObj id -> id, id2
+        | _ -> raise @@ Type_error (id1 ^ " is not Obj type")
+        end
+      | _ -> raise @@ Type_bug "inner_class yet"
+    in let (t, _) = Store.find class_name !class_store |> fst |> Store.find calling_name in
+    t
+  | Call_method (ids, es) -> 
+    let class_name, calling_name = match ids with
+      | id :: [] -> !current_class, id
+      | id1 :: id2 :: [] -> begin match Store.find id1 tystore with
+        | TyObj id -> id, id2
+        | _ -> raise @@ Type_error (id1 ^ " is not Obj type")
+        end
+      | _ -> raise @@ Type_bug "inner_class yet"
+    in let (args, t, _) = Store.find class_name !class_store |> snd |> Store.find calling_name in
     let formal_arg_tys = List.map (fun (_, t) -> t) args in
     let actual_arg_tys = List.map (fun e -> typing_exp e tystore) es in
     if List.fold_left2 (fun b -> fun fa -> fun aa -> b && fa = aa) true formal_arg_tys actual_arg_tys then t
-    else raise @@ Type_error ("calling " ^ id)
+    else raise @@ Type_error ("calling " ^ calling_name)
 
 let rec typing_command c rt tystore = match c with
   | Declare (t, id) -> Store.add id t tystore
@@ -64,18 +83,20 @@ and typing_commands cs rt tystore = match cs with
     typing_commands t rt tystore
   | [] -> ()
 
-let rec typing_methods (ms : (id * mthd) list) = match ms with
-  | (_, (args, rt, cs)) :: t -> 
-    let store = List.fold_left (fun store -> fun (id, ty) -> Store.add id ty store) Store.empty args in
-    typing_commands cs rt store;
-    typing_methods t
+let rec typing_methods (ms : (id * mthd) list) fs = match ms with
+  | (_, (args, rt, cs)) :: t ->
+    let store_field_ty = Store.map fst fs in
+    let store_arg_ty = List.fold_left (fun store -> fun (id, ty) -> Store.add id ty store) Store.empty args in
+    let store_ty = Store.union (fun _ _ v2 -> Some v2) store_field_ty store_arg_ty in
+    typing_commands cs rt store_ty;
+    typing_methods t fs
   | [] -> ()
 
 let rec typing_classes (cs : (id * cls) list) = match cs with
-  | (id, ms) :: t -> 
-    let bindings : (id * mthd) list = Store.bindings ms in
+  | (id, (fs, ms)) :: t -> 
+    let bindings = Store.bindings ms in
     current_class := id;
-    typing_methods bindings; typing_classes t
+    typing_methods bindings fs; typing_classes t
   | [] -> ()
 
 let typing (cs:program) =

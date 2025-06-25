@@ -4,10 +4,10 @@ open Syntax
 
 %token CLASS LCURLY RCURLY LPAREN RPAREN SEMI OUT SUBSTITUTE INT BOOLEAN VOID EOF
 %token TRUE FALSE IF ELSE WHILE PLUS MINUS PROD DIV MOD LT GT LE GE EQ NEQ LAND LOR
-%token COMMA RETURN
+%token COMMA RETURN NEW DOT
 
 %token<int> INTV
-%token<Syntax.id> ID
+%token<Syntax.id> ID CID
 
 %start toplevel
 %type<Syntax.program> toplevel
@@ -24,24 +24,31 @@ toplevel :
   | cs=ClassesExpr EOF { cs }
 
 ClassesExpr :
-  | c=ClassExpr cs=ClassesExpr { match c with (id, ms) -> Store.add id ms cs }
+  | c=ClassExpr cs=ClassesExpr { match c with (id, members) -> Store.add id members cs }
   | (*empty*) { Store.empty }
 
 ClassExpr :
-  | CLASS id=ID LCURLY ms=MethodsExpr RCURLY { (id, ms) }
+  | CLASS cid=CID LCURLY members=MembersExpr RCURLY { (cid, members) }
 
-MethodsExpr :
-  | m=MethodExpr ms=MethodsExpr { match m with (id, args, rt, cs) -> Store.add id (args, rt, cs) ms }
-  | (*empty*) { Store.empty }
+MembersExpr :
+  | d=TyAndIdExpr SEMI members=MembersExpr { match d, members with (id, ty), (fs, ms) -> Store.add id (ty, initial_val ty) fs, ms }
+  | d=TyAndIdExpr LPAREN args=separated_list(COMMA, TyAndIdExpr) RPAREN LCURLY cs=list(CommandExpr) RCURLY members=MembersExpr { 
+    match d, members with (id, rt), (fs, ms) -> fs, Store.add id (args, rt, cs) ms
+    }
+  | (*empty*) { Store.empty, Store.empty }
 
-MethodExpr :
-  | rt=TyExpr id=ID LPAREN args=separated_list(COMMA, ArgExpr) RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, args, rt, cs) }
+// MethodsExpr :
+//   | m=MethodExpr ms=MethodsExpr { match m with (id, args, rt, cs) -> Store.add id (args, rt, cs) ms }
+//   | (*empty*) { Store.empty }
 
-ArgExpr :
+// MethodExpr :
+//   | ti=TyAndIdExpr LPAREN args=separated_list(COMMA, TyAndIdExpr) RPAREN LCURLY cs=list(CommandExpr) RCURLY { (id, args, rt, cs) }
+
+TyAndIdExpr :
   | ty=TyExpr id=ID { (id, ty) }
 
 CommandExpr :
-  | t=TyExpr id=ID SEMI { Declare (t, id) }
+  | d=TyAndIdExpr SEMI { match d with (id, ty) -> Declare (ty, id) }
   | id=ID SUBSTITUTE e=Expr SEMI { Substitute (id, e) }
   | IF LPAREN e=Expr RPAREN LCURLY cs1=list(CommandExpr) RCURLY els=ElseExpr { If ((e, cs1)::els) }
   | WHILE LPAREN e=Expr RPAREN LCURLY cs=list(CommandExpr) RCURLY { While (e, cs) }
@@ -55,12 +62,18 @@ ElseExpr :
 
 Expr :
   | OUT LPAREN e=Expr RPAREN { Out e }
-  | id=ID LPAREN args=separated_list(COMMA, Expr) RPAREN { Call (id, args) }
+  | NEW cid=CID LPAREN RPAREN { Instanciation cid }
+  | ids=separated_nonempty_list(DOT, ID) args=option(delimited(LPAREN, separated_list(COMMA, Expr), RPAREN)) { 
+    match ids, args with
+      | id :: [], None -> Var id
+      | _, None -> Access_field ids
+      | _, Some args -> Call_method (ids, args) 
+    }
   | e1=Expr op=Op e2=Expr { BinOp (op, e1, e2) }
   | i=INTV { IConst i }
   | TRUE { BConst true }
   | FALSE { BConst false }
-  | id=ID { Var id }
+  // | id=ID { Var id }
 
 %inline Op :
   | PLUS { Plus }
@@ -81,3 +94,4 @@ TyExpr :
   | INT { TyInt }
   | BOOLEAN { TyBool }
   | VOID { TyVoid }
+  | cid=CID { TyObj cid }

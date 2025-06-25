@@ -4,25 +4,27 @@ class Counter {
 
 	// 値を設定するメソッド（引数あり）
 	void setCount(int n) {
-		this.count = n;
+		count = n;
 	}
 
 	// 値を取得するメソッド（戻り値あり）
 	int getCount() {
-		return this.count;
+		return count;
 	}
 
 	// カウントを1増やす
 	void increment() {
-		this.count = this.count + 1;
+		count = count + 1;
 	}
 }
 
 class Test2 {
 	void main() {
 		// Counterクラスのインスタンスを2つ生成
-		Counter c1 = new Counter();
-		Counter c2 = new Counter();
+		Counter c1;
+		c1 = new Counter();
+		Counter c2;
+		c2 = new Counter();
 
 		// それぞれのインスタンスに異なる値を設定
 		c1.setCount(10);
@@ -35,9 +37,9 @@ class Test2 {
 		out(c2.getCount()); // -> 50 が出力される
 
 		// 配列のテスト
-		int[] arr = new int[5];
-		arr[0] = 1;
-		arr[1] = arr[0] * 2;
-		out(arr[1]); // -> 2 が出力される
+		// int[] arr = new int[5];
+		// arr[0] = 1;
+		// arr[1] = arr[0] * 2;
+		// out(arr[1]); // -> 2 が出力される
 	}
 }

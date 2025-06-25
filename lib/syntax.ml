@@ -1,3 +1,4 @@
+exception Void_declaration
 
 type id = string
 
@@ -8,14 +9,9 @@ module Store = Map.Make (
   end
   )
 
-type ty = TyInt | TyBool | TyVoid
+type ty = TyInt | TyBool | TyVoid | TyObj of id
 
 type binop = Plus | Minus | Prod | Div | Mod | Lt | Gt | Le | Ge | Eq | Neq | Land | Lor
-
-type value = 
-  | IntV of int
-  | BoolV of bool
-  | VoidV
 
 type exp = 
   | IConst of int
@@ -23,7 +19,9 @@ type exp =
   | Var of id
   | BinOp of binop * exp * exp
   | Out of exp (* will be deleted *)
-  | Call of id * exp list
+  | Access_field of id list
+  | Call_method of id list * exp list
+  | Instanciation of id
 and command = 
   | Declare of ty * id
   | Substitute of id * exp
@@ -32,10 +30,23 @@ and command =
   | Return of exp
   | Exp of exp
 
+type value = 
+  | IntV of int
+  | BoolV of bool
+  | VoidV
+  | NullV
+  | ObjV of id * value Store.t * (id list * command list) Store.t
+
 type args = (id * ty) list
 
 type mthd = args * ty * command list
 
-type cls = mthd Store.t
+type cls = (ty * value) Store.t * mthd Store.t
 
 type program = cls Store.t
+
+let initial_val ty = match ty with
+  | TyInt -> IntV 0
+  | TyBool -> BoolV false 
+  | TyVoid -> raise @@ Void_declaration
+  | TyObj _ -> NullV
